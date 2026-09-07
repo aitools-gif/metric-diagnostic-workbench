@@ -14086,8 +14086,12 @@ function Re(e, t) {
           dimensions: Object.fromEntries(e.dimensions.map((e, t) => [e, o[t]])),
           comparison: Le(e),
           current: Le(e),
+          comparisonCount: 0,
+          currentCount: 0,
         }),
         n.set(s, c)),
+        i && (c.comparisonCount += 1),
+        a && (c.currentCount += 1),
         e.metrics.forEach((e) => {
           if (e.kind !== `sum` || !e.primitive) return;
           let t = r.values[e.primitive] ?? 0;
@@ -15143,6 +15147,15 @@ function Ye({ onEnter: e, onUseDemo: t }) {
 }
 var Xe = [`platform`, `funnel`, `objective`, `audience`],
   N = 1e-12;
+function periodAvailable(e, t) {
+  if (e.length === 0) return !1;
+  let n = `${t}Count`;
+  return e.some((e) =>
+    Object.prototype.hasOwnProperty.call(e, n)
+      ? Number.isFinite(e[n]) && e[n] > 0
+      : !0,
+  );
+}
 function Ze(e, t) {
   return e.reduce(
     (e, n) => (
@@ -15173,7 +15186,10 @@ function et(
   let o = Ze(e, `comparison`),
     s = Ze(e, `current`),
     c = Qe(o, t),
-    l = Qe(s, t);
+    l = Qe(s, t),
+    u = periodAvailable(e, `comparison`),
+    d = periodAvailable(e, `current`),
+    f = u && Math.abs(c) >= N;
   return {
     rows: e,
     metric: t,
@@ -15184,7 +15200,10 @@ function et(
     rootCurrentPrimitives: s,
     rootComparison: c,
     rootCurrent: l,
-    rootYoy: Math.abs(c) < N ? 0 : (l - c) / c,
+    rootYoy: f ? (l - c) / c : 0,
+    rootComparisonAvailable: u,
+    rootCurrentAvailable: d,
+    baselineAvailable: f,
     minGain: r,
   };
 }
@@ -15196,14 +15215,23 @@ function tt(e, t) {
     rootComparisonPrimitives: a,
     rootCurrentPrimitives: o,
   } = t;
-  if (Math.abs(r) < N)
-    return {
-      contribution: 0,
-      structureContribution: n.kind === `ratio` ? 0 : null,
-      efficiencyContribution: n.kind === `ratio` ? 0 : null,
-    };
   let s = Ze(e, `comparison`),
     c = Ze(e, `current`);
+  if (!t.baselineAvailable) {
+    let e =
+      n.kind === `sum`
+        ? Math.abs(i) >= N
+          ? (c[n.primitive] ?? 0) / i
+          : 0
+        : Math.abs(o[n.numerator] ?? 0) >= N
+          ? (c[n.numerator] ?? 0) / o[n.numerator]
+          : 0;
+    return {
+      contribution: Number.isFinite(e) ? e : 0,
+      structureContribution: null,
+      efficiencyContribution: null,
+    };
+  }
   if (n.kind === `sum`) {
     let e = n.primitive;
     return {
@@ -15293,7 +15321,9 @@ function ot(e, t, n) {
         let c = $e(o, `comparison`, n.metric),
           l = $e(o, `current`, n.metric),
           u = i[s],
-          d = u.contribution;
+          d = u.contribution,
+          f = periodAvailable(o, `comparison`),
+          p = periodAvailable(o, `current`);
         return {
           id: `${e.id}/${encodeURIComponent(t)}:${encodeURIComponent(r)}`,
           label: r,
@@ -15301,7 +15331,10 @@ function ot(e, t, n) {
           rows: o,
           comparison: c,
           current: l,
-          yoy: Math.abs(c) < N ? 0 : (l - c) / c,
+          comparisonAvailable: f,
+          currentAvailable: p,
+          isNew: p && !f,
+          yoy: f && Math.abs(c) >= N ? (l - c) / c : 0,
           contribution: d,
           structureContribution: u.structureContribution,
           efficiencyContribution: u.efficiencyContribution,
@@ -15383,6 +15416,9 @@ function lt(e) {
     comparison: e.rootComparison,
     current: e.rootCurrent,
     yoy: e.rootYoy,
+    comparisonAvailable: e.rootComparisonAvailable,
+    currentAvailable: e.rootCurrentAvailable,
+    isNew: e.rootCurrentAvailable && !e.rootComparisonAvailable,
     contribution: e.rootYoy,
     structureContribution: e.metric.kind === `ratio` ? 0 : null,
     efficiencyContribution: e.metric.kind === `ratio` ? e.rootYoy : null,
@@ -15402,6 +15438,9 @@ function ut(e, t, n) {
     comparison: t.comparison,
     current: t.current,
     yoy: t.yoy,
+    comparisonAvailable: t.comparisonAvailable,
+    currentAvailable: t.currentAvailable,
+    isNew: t.isNew,
     contribution: t.contribution,
     structureContribution: t.structureContribution,
     efficiencyContribution: t.efficiencyContribution,
@@ -15482,7 +15521,9 @@ function vt(e) {
 function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
   let i = e.metric ? $e(t, `current`, e.metric) : null,
     a = e.metric ? $e(t, `comparison`, e.metric) : null,
-    o = i !== null && a !== null && Math.abs(a) >= N ? (i - a) / a : null,
+    c = periodAvailable(t, `current`),
+    l = periodAvailable(t, `comparison`),
+    o = c && l && i !== null && a !== null && Math.abs(a) >= N ? (i - a) / a : null,
     s = vt(o ?? 0);
   return (0, p.jsxs)(`button`, {
     type: `button`,
@@ -15510,7 +15551,7 @@ function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
             children: [
               (0, p.jsx)(`small`, { children: `当期` }),
               (0, p.jsx)(`strong`, {
-                children: i === null ? `—` : ht(i, e.metric),
+                children: !c ? `无数据` : i === null ? `—` : ht(i, e.metric),
               }),
             ],
           }),
@@ -15518,7 +15559,7 @@ function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
             children: [
               (0, p.jsx)(`small`, { children: `同期` }),
               (0, p.jsx)(`strong`, {
-                children: a === null ? `—` : ht(a, e.metric),
+                children: !l ? `无数据` : a === null ? `—` : ht(a, e.metric),
               }),
             ],
           }),
@@ -15527,7 +15568,7 @@ function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
               (0, p.jsx)(`strong`, {
-                children: o === null ? `—` : gt(o, !0),
+                children: o === null ? `不适用` : gt(o, !0),
               }),
             ],
           }),
@@ -15588,12 +15629,16 @@ function bt({
             children: (0, p.jsx)(`h3`, { children: t.label }),
           }),
               (0, p.jsx)(`span`, {
-                className: `detail-tone tone-${vt(t.isRoot ? t.yoy : t.contribution)}`,
-            children: t.isRoot
-              ? `整体信号`
-              : t.contribution >= 0
-                ? `正向贡献`
-                : `负向贡献`,
+                className: `detail-tone ${t.isNew ? `is-new` : `tone-${vt(t.isRoot ? t.yoy : t.contribution)}`}`,
+            children: t.isNew
+              ? t.isRoot
+                ? `新增数据`
+                : `新增节点`
+              : t.isRoot
+                ? `整体信号`
+                : t.contribution >= 0
+                  ? `正向贡献`
+                  : `负向贡献`,
           }),
           (0, p.jsxs)(`button`, {
             type: `button`,
@@ -15632,13 +15677,20 @@ function bt({
           (0, p.jsxs)(`div`, {
             children: [
               (0, p.jsx)(`span`, { children: `当前期指标` }),
-              (0, p.jsx)(`strong`, { children: ht(t.current, e.metric) }),
+              (0, p.jsx)(`strong`, {
+                children: t.currentAvailable === !1 ? `无数据` : ht(t.current, e.metric),
+              }),
             ],
           }),
           (0, p.jsxs)(`div`, {
             children: [
               (0, p.jsx)(`span`, { children: `对比期指标` }),
-              (0, p.jsx)(`strong`, { children: ht(t.comparison, e.metric) }),
+              (0, p.jsx)(`strong`, {
+                children:
+                  t.comparisonAvailable === !1
+                    ? `无数据`
+                    : ht(t.comparison, e.metric),
+              }),
             ],
           }),
           (0, p.jsxs)(`div`, {
@@ -15646,18 +15698,29 @@ function bt({
               (0, p.jsx)(`span`, { children: `同比变化` }),
               (0, p.jsx)(`strong`, {
                 className: `tone-${vt(t.yoy)}`,
-                children: gt(t.yoy, !0),
+                children:
+                  t.comparisonAvailable === !1 ||
+                  t.currentAvailable === !1 ||
+                  Math.abs(t.comparison) < N
+                    ? `不适用`
+                    : gt(t.yoy, !0),
               }),
             ],
           }),
           (0, p.jsxs)(`div`, {
             children: [
               (0, p.jsx)(`span`, {
-                children: t.isRoot ? `贡献度` : `对整体贡献`,
+                children: t.isRoot
+                  ? `贡献度`
+                  : e.baselineAvailable
+                    ? `对整体贡献`
+                    : `当前占比`,
               }),
               (0, p.jsx)(`strong`, {
                 className: t.isRoot ? `` : `tone-${vt(t.contribution)}`,
-                children: t.isRoot ? `不适用` : gt(t.contribution, !0),
+                children: t.isRoot
+                  ? `不适用`
+                  : gt(t.contribution, e.baselineAvailable),
               }),
             ],
           }),
@@ -15856,18 +15919,23 @@ function bt({
                         children: (0, p.jsxs)(`h4`, {
                           children: [
                             e.dimensionLabels[o.dimension] ?? o.dimension,
-                            `贡献分布`,
+                            e.baselineAvailable ? `贡献分布` : `当前占比分布`,
                           ],
                         }),
                       }),
                       (0, p.jsxs)(`small`, {
-                        children: [s.length, ` 个`, u, `联合节点`],
+                        children: [
+                          s.length,
+                          ` 个`,
+                          e.baselineAvailable ? u : `当前结构`,
+                          `联合节点`,
+                        ],
                       }),
                     ],
                   }),
                   (0, p.jsx)(`div`, {
                     className: `distribution-list`,
-                    children: s.map(({ parent: e, child: t }) =>
+                    children: s.map(({ parent: parentNode, child: t }) =>
                       (0, p.jsxs)(
                         `div`,
                         {
@@ -15877,13 +15945,13 @@ function bt({
                               className: `distribution-label`,
                               children: [
                                 (0, p.jsx)(`span`, {
-                                  children: e.isRoot
+                                  children: parentNode.isRoot
                                     ? t.label
-                                    : `${e.path.slice(1).join(` / `)} / ${t.label}`,
+                                    : `${parentNode.path.slice(1).join(` / `)} / ${t.label}`,
                                 }),
                                 (0, p.jsx)(`strong`, {
                                   className: `tone-${vt(t.contribution)}`,
-                                  children: gt(t.contribution, !0),
+                                  children: gt(t.contribution, e.baselineAvailable),
                                 }),
                               ],
                             }),
@@ -15900,7 +15968,10 @@ function bt({
                               }),
                             }),
                             (0, p.jsxs)(`small`, {
-                              children: [`占比 `, gt(t.contributionShare)],
+                              children: [
+                                e.baselineAvailable ? `占比 ` : `结构占比 `,
+                                gt(t.contributionShare),
+                              ],
                             }),
                           ],
                         },
@@ -15941,7 +16012,7 @@ function St({
   onSelect: s,
   onToggle: c,
 }) {
-  let l = vt(t.isRoot ? t.yoy : t.contribution),
+  let l = t.isNew ? `new` : vt(t.isRoot ? t.yoy : t.contribution),
     u = t.usedDimensions.at(-1),
     d = t.isRoot
       ? `整体`
@@ -15976,6 +16047,11 @@ function St({
                 children: d,
               }),
               (0, p.jsx)(`h4`, { children: t.label }),
+              t.isNew &&
+                (0, p.jsx)(`span`, {
+                  className: `node-new-badge`,
+                  children: t.isRoot ? `新增数据` : `新增节点`,
+                }),
             ],
           }),
           (0, p.jsxs)(`div`, {
@@ -15984,14 +16060,22 @@ function St({
               (0, p.jsxs)(`span`, {
                 children: [
                   (0, p.jsx)(`small`, { children: `当期指标` }),
-                  (0, p.jsx)(`strong`, { children: ht(t.current, e.metric) }),
+                  (0, p.jsx)(`strong`, {
+                    children:
+                      t.currentAvailable === !1
+                        ? `无数据`
+                        : ht(t.current, e.metric),
+                  }),
                 ],
               }),
               (0, p.jsxs)(`span`, {
                 children: [
                   (0, p.jsx)(`small`, { children: `同期指标` }),
                   (0, p.jsx)(`strong`, {
-                    children: ht(t.comparison, e.metric),
+                    children:
+                      t.comparisonAvailable === !1
+                        ? `无数据`
+                        : ht(t.comparison, e.metric),
                   }),
                 ],
               }),
@@ -16000,24 +16084,35 @@ function St({
                   (0, p.jsx)(`small`, { children: `同比变化` }),
                   (0, p.jsx)(`strong`, {
                     className: `tone-${vt(t.yoy)}`,
-                    children: gt(t.yoy, !0),
+                    children:
+                      t.comparisonAvailable === !1 ||
+                      t.currentAvailable === !1 ||
+                      Math.abs(t.comparison) < N
+                        ? `不适用`
+                        : gt(t.yoy, !0),
                   }),
                 ],
               }),
               !t.isRoot &&
                 (0, p.jsxs)(`span`, {
                   children: [
-                    (0, p.jsx)(`small`, { children: `贡献度` }),
+                    (0, p.jsx)(`small`, {
+                      children: e.baselineAvailable ? `贡献度` : `当前占比`,
+                    }),
                     (0, p.jsx)(`strong`, {
                       className: `tone-${vt(t.contribution)}`,
-                      children: gt(t.contribution, !0),
+                      children: gt(t.contribution, e.baselineAvailable),
                     }),
                   ],
                 }),
               !t.isRoot &&
                 (0, p.jsxs)(`span`, {
                   children: [
-                    (0, p.jsx)(`small`, { children: `整层贡献占比` }),
+                    (0, p.jsx)(`small`, {
+                      children: e.baselineAvailable
+                        ? `整层贡献占比`
+                        : `整层结构占比`,
+                    }),
                     (0, p.jsx)(`strong`, { children: gt(t.contributionShare) }),
                   ],
                 }),
@@ -16098,9 +16193,11 @@ function Tt({ context: e, levels: t, expanded: n }) {
                         ` 个联合节点`,
                         (0, p.jsx)(`i`, {}),
                         ` `,
-                        e.direction === `all`
-                          ? `净贡献`
-                          : `${e.direction === `positive` ? `正` : `负`}向小计`,
+                        e.baselineAvailable
+                          ? e.direction === `all`
+                            ? `净贡献`
+                            : `${e.direction === `positive` ? `正` : `负`}向小计`
+                          : `当前结构占比`,
                         (0, p.jsx)(`strong`, {
                           className: `tone-${vt(pt(n, e.direction))}`,
                           children: gt(pt(n, e.direction), !0),
@@ -16400,9 +16497,11 @@ function Mt({
 }) {
   let s = e.metric ? $e(t, `current`, e.metric) : null,
     c = e.metric ? $e(t, `comparison`, e.metric) : null,
-    l = s !== null && c !== null && Math.abs(c) >= N ? (s - c) / c : null,
+    m = periodAvailable(t, `current`),
+    g = periodAvailable(t, `comparison`),
+    l = m && g && s !== null && c !== null && Math.abs(c) >= N ? (s - c) / c : null,
     u = vt(l ?? 0),
-    d = Lmdi(t, a, e.metric, o),
+    d = m && g ? Lmdi(t, a, e.metric, o) : null,
     f = vt(d ?? 0);
   return (0, p.jsxs)(`button`, {
     type: `button`,
@@ -16435,7 +16534,7 @@ function Mt({
             children: [
               (0, p.jsx)(`small`, { children: `当期` }),
               (0, p.jsx)(`strong`, {
-                children: s === null ? `—` : ht(s, e.metric),
+                children: !m ? `无数据` : s === null ? `—` : ht(s, e.metric),
               }),
             ],
           }),
@@ -16443,7 +16542,7 @@ function Mt({
             children: [
               (0, p.jsx)(`small`, { children: `同期` }),
               (0, p.jsx)(`strong`, {
-                children: c === null ? `—` : ht(c, e.metric),
+                children: !g ? `无数据` : c === null ? `—` : ht(c, e.metric),
               }),
             ],
           }),
@@ -16451,7 +16550,9 @@ function Mt({
             className: `metric-chain-yoy tone-${u}`,
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
-              (0, p.jsx)(`strong`, { children: l === null ? `—` : gt(l, !0) }),
+              (0, p.jsx)(`strong`, {
+                children: l === null ? `不适用` : gt(l, !0),
+              }),
             ],
           }),
           (0, p.jsxs)(`span`, {
@@ -16459,7 +16560,9 @@ function Mt({
             title: i ? `转化价值总体变化` : `相对同期转化价值的 LMDI 贡献度`,
             children: [
               (0, p.jsx)(`small`, { children: i ? `总变化` : `贡献度` }),
-              (0, p.jsx)(`strong`, { children: d === null ? `—` : gt(d, !0) }),
+              (0, p.jsx)(`strong`, {
+                children: d === null ? `不适用` : gt(d, !0),
+              }),
             ],
           }),
         ],
@@ -17053,6 +17156,8 @@ function Zt(e) {
                 audience: u,
                 comparison: m,
                 current: h,
+                comparisonCount: 1,
+                currentCount: 1,
               }));
           });
         });
@@ -17291,13 +17396,10 @@ function sn() {
     M = (0, d.useMemo)(() => lt(j), [j]),
     fe = (0, d.useMemo)(
       () => ({
-        current:
-          !D || D.dates.some((e) => e >= u.currentStart && e <= u.currentEnd),
-        comparison:
-          !D ||
-          D.dates.some((e) => e >= u.comparisonStart && e <= u.comparisonEnd),
+        current: !D || periodAvailable(de, `current`),
+        comparison: !D || periodAvailable(de, `comparison`),
       }),
-      [D, u],
+      [D, de],
     ),
     pe = fe.comparison
       ? fe.current
@@ -17521,7 +17623,7 @@ function sn() {
               selectedMetricKey: A.key,
               onSelect: (e) => Se({ ...c, metric: e.key }),
             }),
-            pe
+            pe && !fe.current
               ? (0, p.jsxs)(`div`, {
                   className: `stale-banner`,
                   role: `status`,

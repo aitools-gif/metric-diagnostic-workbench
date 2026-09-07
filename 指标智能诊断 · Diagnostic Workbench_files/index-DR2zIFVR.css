@@ -1444,6 +1444,10 @@ main {
   background: var(--negative);
   box-shadow: 0 0 0 1px var(--negative);
 }
+.signal-new {
+  background: #d88712;
+  box-shadow: 0 0 0 1px #d88712;
+}
 .node-main {
   gap: 12px;
   width: 100%;
@@ -1467,6 +1471,17 @@ main {
   margin: 0;
   font-size: 14px;
   font-weight: 650;
+}
+.node-new-badge {
+  color: #9a5b05;
+  background: #fff4d6;
+  border: 1px solid #f2d28a;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 .root-node .node-title-line h4 {
   font-size: 16px;
@@ -1646,6 +1661,11 @@ main {
   border-radius: 4px;
   padding: 5px 7px;
   font-size: 8px;
+}
+.detail-tone.is-new {
+  color: #925505;
+  background: #fff4d6;
+  border-color: #edc875;
 }
 .detail-drill-button {
   border: 1px solid var(--primary);
