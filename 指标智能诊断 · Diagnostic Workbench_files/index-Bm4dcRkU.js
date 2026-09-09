@@ -15533,6 +15533,10 @@ function metricTone(e, t) {
 function trendDirection(e) {
   return e > 1e-12 ? `up` : e < -1e-12 ? `down` : `flat`;
 }
+function trendArrow(e) {
+  let t = trendDirection(e);
+  return t === `up` ? ` ↑` : t === `down` ? ` ↓` : ``;
+}
 function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
   let i = e.metric ? $e(t, `current`, e.metric) : null,
     a = e.metric ? $e(t, `comparison`, e.metric) : null,
@@ -15583,7 +15587,7 @@ function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
               (0, p.jsx)(`strong`, {
-                children: o === null ? `不适用` : gt(o, !0),
+                children: o === null ? `不适用` : `${gt(o, !0)}${trendArrow(o)}`,
               }),
             ],
           }),
@@ -16567,7 +16571,7 @@ function Mt({
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
               (0, p.jsx)(`strong`, {
-                children: l === null ? `不适用` : gt(l, !0),
+                children: l === null ? `不适用` : `${gt(l, !0)}${trendArrow(l)}`,
               }),
             ],
           }),

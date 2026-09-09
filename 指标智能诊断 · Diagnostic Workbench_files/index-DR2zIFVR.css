@@ -804,17 +804,6 @@ main {
   gap: 5px;
   display: flex;
 }
-.metric-chain-yoy strong:after {
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1;
-}
-.metric-chain-yoy.trend-up strong:after {
-  content: "↑";
-}
-.metric-chain-yoy.trend-down strong:after {
-  content: "↓";
-}
 .metric-chain-card-values .tone-positive strong {
   color: var(--positive);
 }
