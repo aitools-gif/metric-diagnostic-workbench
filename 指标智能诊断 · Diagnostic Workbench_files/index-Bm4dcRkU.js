@@ -15518,13 +15518,28 @@ function _t(e, t = !1) {
 function vt(e) {
   return e > 1e-12 ? `positive` : e < -1e-12 ? `negative` : `neutral`;
 }
+function isInverseCostMetric(e) {
+  let t = kt(e?.label ?? ``);
+  return t === `cpc` || t === `cp转化` || t === `cpatc` || t === `cplpv`;
+}
+function metricTone(e, t) {
+  let n = vt(e);
+  return !isInverseCostMetric(t) || n === `neutral`
+    ? n
+    : n === `positive`
+      ? `negative`
+      : `positive`;
+}
+function trendDirection(e) {
+  return e > 1e-12 ? `up` : e < -1e-12 ? `down` : `flat`;
+}
 function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
   let i = e.metric ? $e(t, `current`, e.metric) : null,
     a = e.metric ? $e(t, `comparison`, e.metric) : null,
     c = periodAvailable(t, `current`),
     l = periodAvailable(t, `comparison`),
     o = c && l && i !== null && a !== null && Math.abs(a) >= N ? (i - a) / a : null,
-    s = vt(o ?? 0);
+    s = metricTone(o ?? 0, e.metric);
   return (0, p.jsxs)(`button`, {
     type: `button`,
     className: `metric-chain-side-card ${n ? `is-selected` : ``}`,
@@ -15564,7 +15579,7 @@ function AuxiliaryMetricCard({ spec: e, rows: t, selected: n, onSelect: r }) {
             ],
           }),
           (0, p.jsxs)(`span`, {
-            className: `metric-chain-yoy tone-${s}`,
+            className: `metric-chain-yoy tone-${s} trend-${trendDirection(o ?? 0)}`,
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
               (0, p.jsx)(`strong`, {
@@ -15629,7 +15644,7 @@ function bt({
             children: (0, p.jsx)(`h3`, { children: t.label }),
           }),
               (0, p.jsx)(`span`, {
-                className: `detail-tone ${t.isNew ? `is-new` : `tone-${vt(t.isRoot ? t.yoy : t.contribution)}`}`,
+                className: `detail-tone ${t.isNew ? `is-new` : `tone-${metricTone(t.isRoot ? t.yoy : t.contribution, e.metric)}`}`,
             children: t.isNew
               ? t.isRoot
                 ? `新增数据`
@@ -15697,7 +15712,7 @@ function bt({
             children: [
               (0, p.jsx)(`span`, { children: `同比变化` }),
               (0, p.jsx)(`strong`, {
-                className: `tone-${vt(t.yoy)}`,
+                className: `tone-${metricTone(t.yoy, e.metric)}`,
                 children:
                   t.comparisonAvailable === !1 ||
                   t.currentAvailable === !1 ||
@@ -15717,7 +15732,9 @@ function bt({
                     : `当前占比`,
               }),
               (0, p.jsx)(`strong`, {
-                className: t.isRoot ? `` : `tone-${vt(t.contribution)}`,
+                className: t.isRoot
+                  ? ``
+                  : `tone-${metricTone(t.contribution, e.metric)}`,
                 children: t.isRoot
                   ? `不适用`
                   : gt(t.contribution, e.baselineAvailable),
@@ -15729,7 +15746,7 @@ function bt({
               children: [
                 (0, p.jsx)(`span`, { children: `结构贡献` }),
                 (0, p.jsx)(`strong`, {
-                  className: `tone-${vt(t.structureContribution)}`,
+                  className: `tone-${metricTone(t.structureContribution, e.metric)}`,
                   children: gt(t.structureContribution, !0),
                 }),
               ],
@@ -15739,7 +15756,7 @@ function bt({
               children: [
                 (0, p.jsx)(`span`, { children: `效率贡献` }),
                 (0, p.jsx)(`strong`, {
-                  className: `tone-${vt(t.efficiencyContribution)}`,
+                  className: `tone-${metricTone(t.efficiencyContribution, e.metric)}`,
                   children: gt(t.efficiencyContribution, !0),
                 }),
               ],
@@ -15950,7 +15967,7 @@ function bt({
                                     : `${parentNode.path.slice(1).join(` / `)} / ${t.label}`,
                                 }),
                                 (0, p.jsx)(`strong`, {
-                                  className: `tone-${vt(t.contribution)}`,
+                                  className: `tone-${metricTone(t.contribution, e.metric)}`,
                                   children: gt(t.contribution, e.baselineAvailable),
                                 }),
                               ],
@@ -15958,10 +15975,7 @@ function bt({
                             (0, p.jsx)(`div`, {
                               className: `distribution-bar`,
                               children: (0, p.jsx)(`i`, {
-                                className:
-                                  t.contribution >= 0
-                                    ? `is-positive`
-                                    : `is-negative`,
+                                className: `is-${metricTone(t.contribution, e.metric)}`,
                                 style: {
                                   width: `${Math.max(3, (Math.abs(t.contribution) / c) * 100)}%`,
                                 },
@@ -16012,7 +16026,9 @@ function St({
   onSelect: s,
   onToggle: c,
 }) {
-  let l = t.isNew ? `new` : vt(t.isRoot ? t.yoy : t.contribution),
+  let l = t.isNew
+      ? `new`
+      : metricTone(t.isRoot ? t.yoy : t.contribution, e.metric),
     u = t.usedDimensions.at(-1),
     d = t.isRoot
       ? `整体`
@@ -16083,7 +16099,7 @@ function St({
                 children: [
                   (0, p.jsx)(`small`, { children: `同比变化` }),
                   (0, p.jsx)(`strong`, {
-                    className: `tone-${vt(t.yoy)}`,
+                    className: `tone-${metricTone(t.yoy, e.metric)}`,
                     children:
                       t.comparisonAvailable === !1 ||
                       t.currentAvailable === !1 ||
@@ -16100,7 +16116,7 @@ function St({
                       children: e.baselineAvailable ? `贡献度` : `当前占比`,
                     }),
                     (0, p.jsx)(`strong`, {
-                      className: `tone-${vt(t.contribution)}`,
+                      className: `tone-${metricTone(t.contribution, e.metric)}`,
                       children: gt(t.contribution, e.baselineAvailable),
                     }),
                   ],
@@ -16199,7 +16215,7 @@ function Tt({ context: e, levels: t, expanded: n }) {
                             : `${e.direction === `positive` ? `正` : `负`}向小计`
                           : `当前结构占比`,
                         (0, p.jsx)(`strong`, {
-                          className: `tone-${vt(pt(n, e.direction))}`,
+                          className: `tone-${metricTone(pt(n, e.direction), e.metric)}`,
                           children: gt(pt(n, e.direction), !0),
                         }),
                       ],
@@ -16342,10 +16358,10 @@ function Et({
     ],
   });
 }
-function Dt({ change: e }) {
+function Dt({ change: e, metric: n }) {
   let t = e < 0;
   return (0, p.jsxs)(`svg`, {
-    className: `sparkline ${t ? `is-negative` : `is-positive`}`,
+    className: `sparkline is-${metricTone(e, n)}`,
     viewBox: `0 0 130 36`,
     "aria-hidden": `true`,
     children: [
@@ -16363,7 +16379,7 @@ function Ot({
   filters: t,
   periodAvailability: n = { current: !0, comparison: !0 },
 }) {
-  let r = vt(e.rootYoy),
+  let r = metricTone(e.rootYoy, e.metric),
     i = n.current && n.comparison && Math.abs(e.rootComparison) >= 1e-12;
   return (0, p.jsxs)(`section`, {
     className: `overview-section`,
@@ -16445,7 +16461,7 @@ function Ot({
                     className: `metric-value`,
                     children: i ? gt(e.rootYoy, !0) : `—`,
                   }),
-                  i && (0, p.jsx)(Dt, { change: e.rootYoy }),
+                  i && (0, p.jsx)(Dt, { change: e.rootYoy, metric: e.metric }),
                 ],
               }),
             ],
@@ -16500,9 +16516,9 @@ function Mt({
     m = periodAvailable(t, `current`),
     g = periodAvailable(t, `comparison`),
     l = m && g && s !== null && c !== null && Math.abs(c) >= N ? (s - c) / c : null,
-    u = vt(l ?? 0),
+    u = metricTone(l ?? 0, e.metric),
     d = m && g ? Lmdi(t, a, e.metric, o) : null,
-    f = vt(d ?? 0);
+    f = metricTone(d ?? 0, e.metric);
   return (0, p.jsxs)(`button`, {
     type: `button`,
     className: `metric-chain-card ${i ? `is-root` : ``} ${n ? `is-selected` : ``} ${h ? `is-contribution-${h}` : ``}`,
@@ -16547,7 +16563,7 @@ function Mt({
             ],
           }),
           (0, p.jsxs)(`span`, {
-            className: `metric-chain-yoy tone-${u}`,
+            className: `metric-chain-yoy tone-${u} trend-${trendDirection(l ?? 0)}`,
             children: [
               (0, p.jsx)(`small`, { children: `同比` }),
               (0, p.jsx)(`strong`, {

@@ -809,10 +809,10 @@ main {
   font-weight: 800;
   line-height: 1;
 }
-.metric-chain-yoy.tone-positive strong:after {
+.metric-chain-yoy.trend-up strong:after {
   content: "↑";
 }
-.metric-chain-yoy.tone-negative strong:after {
+.metric-chain-yoy.trend-down strong:after {
   content: "↓";
 }
 .metric-chain-card-values .tone-positive strong {
